@@ -7,6 +7,7 @@ const LINKS = [
   { href: 'index.html', slug: 'index', label: 'Home' },
   { href: 'about.html', slug: 'about', label: 'About' },
   { href: 'courses.html', slug: 'courses', label: 'Courses' },
+  { href: 'quiz.html', slug: 'quiz', label: 'Quiz' },
   { href: 'faculty.html', slug: 'faculty', label: 'Faculty' },
   { href: 'results.html', slug: 'results', label: 'Results' },
   { href: 'gallery.html', slug: 'gallery', label: 'Gallery' },
