@@ -133,6 +133,9 @@ var TEXT_HI = {
 
   // ---------- Scroll reveal ----------
   function reveals() {
+    // Tell the inline <head> failsafe that the reveal logic is running, so it
+    // won't force-show everything (which would skip the scroll animation).
+    window.__pioneerReveal = true;
     var els = D.querySelectorAll('.reveal');
     if ('IntersectionObserver' in window && els.length) {
       var io = new IntersectionObserver(function (entries) {

@@ -4139,18 +4139,4 @@ export const CHAPTERS: Chapter[] = [
   },
 ];
 
-export function getChapter(slug: string): Chapter | undefined {
-  return CHAPTERS.find((c) => c.slug === slug);
-}
-
-export function publishedChapters(): Chapter[] {
-  return CHAPTERS.filter((c) => c.questions.length > 0);
-}
-
-// Build a mixed "full syllabus" paper by sampling questions across all
-// published chapters. Returns up to `count` questions in random order.
-export function fullSyllabusQuestions(count = 50): MCQ[] {
-  const pool = publishedChapters().flatMap((c) => c.questions);
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, Math.min(count, shuffled.length));
-}
+// Subject-level helpers live in data/subjects.ts (the stream registry).

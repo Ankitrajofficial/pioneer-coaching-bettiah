@@ -528,3 +528,18 @@ table.tt { width: 100%; border-collapse: collapse; min-width: 620px; background:
   .quiz-footer { flex-direction: column; }
   .quiz-footer .btn { width: 100%; }
 }
+
+/* --- Quiz stream (subject) selection --- */
+.quiz-stream-grid { gap: 28px; }
+.quiz-stream-card { display: block; text-decoration: none; color: inherit; padding: 32px 28px; text-align: center; }
+.quiz-stream-icon { font-size: 3rem; line-height: 1; margin-bottom: 14px; }
+.quiz-stream-card h3 { font-size: 1.4rem; color: var(--blue-deep); margin-bottom: 6px; }
+.quiz-stream-meta { color: var(--blue-700); font-weight: 600; font-size: .86rem; margin-bottom: 10px; }
+.quiz-stream-card > p { color: var(--muted); font-size: .96rem; margin-bottom: 16px; }
+
+.quiz-step-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  margin-bottom: 22px; flex-wrap: wrap; }
+.quiz-back-link { font-weight: 600; color: var(--blue-700); }
+.quiz-back-link:hover { color: var(--blue-deep); text-decoration: underline; }
+
+@media (max-width: 640px) { .quiz-stream-grid { grid-template-columns: 1fr; } }

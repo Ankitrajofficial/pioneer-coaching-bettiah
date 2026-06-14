@@ -3,60 +3,73 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Quiz from '@/components/Quiz';
-import { CHAPTERS, SUBJECT, getChapter, fullSyllabusQuestions, publishedChapters } from '@/data/bio12';
+import {
+  SUBJECTS,
+  getSubject,
+  getChapter,
+  publishedChapters,
+  subjectQuestionCount,
+  fullSyllabusQuestions,
+  type Subject,
+} from '@/data/subjects';
 
-const BACK_HREF = 'quiz.html';
+const STREAMS_HREF = 'quiz.html'; // back to stream selection
+
+function chaptersHref(subjectId: string) {
+  return `?subject=${subjectId}`;
+}
 
 function QuizRouter() {
   const params = useSearchParams();
+  const subjectId = params.get('subject');
   const ch = params.get('ch');
   const mode = params.get('mode');
 
-  // Full-syllabus mixed paper
+  // Step 1: no subject chosen -> stream selection
+  const subject = getSubject(subjectId);
+  if (!subject) return <StreamSelect />;
+
+  // Step 3a: full-syllabus paper for this subject
   if (mode === 'full') {
-    const questions = fullSyllabusQuestions(50);
-    if (questions.length === 0) return <ComingSoon title="Full Syllabus Test" />;
+    const questions = fullSyllabusQuestions(subject, 50);
+    if (questions.length === 0) return <ComingSoon subject={subject} title="Full Syllabus Test" />;
     return (
       <Quiz
-        title="Full Syllabus Test"
-        subtitle={`${questions.length} mixed questions from across the published ${SUBJECT.classLabel} ${SUBJECT.name} chapters.`}
+        title={`${subject.name} — Full Syllabus Test`}
+        subtitle={`${questions.length} mixed questions from across the published ${subject.classLabel} ${subject.name} chapters.`}
         questions={questions}
-        backHref={BACK_HREF}
+        backHref={chaptersHref(subject.id)}
       />
     );
   }
 
-  // Single chapter
+  // Step 3b: a specific chapter quiz
   if (ch) {
-    const chapter = getChapter(ch);
+    const chapter = getChapter(subject, ch);
     if (!chapter) return <NotFound />;
-    if (chapter.questions.length === 0) return <ComingSoon title={chapter.title} />;
+    if (chapter.questions.length === 0) return <ComingSoon subject={subject} title={chapter.title} />;
     return (
       <Quiz
         title={chapter.title}
-        subtitle={`${chapter.questions.length} questions • ${chapter.unit}`}
+        subtitle={`${subject.name} • ${chapter.questions.length} questions • ${chapter.unit}`}
         questions={chapter.questions}
-        backHref={BACK_HREF}
+        backHref={chaptersHref(subject.id)}
       />
     );
   }
 
-  return <Hub />;
+  // Step 2: subject chosen, no chapter yet -> chapter list
+  return <ChapterSelect subject={subject} />;
 }
 
-function Hub() {
-  const units = Array.from(new Set(CHAPTERS.map((c) => c.unit)));
-  const publishedCount = publishedChapters().length;
-
+/* ---------- Step 1: stream selection ---------- */
+function StreamSelect() {
   return (
     <>
       <section className="page-hero">
         <div className="container">
           <h1>Practice Quizzes</h1>
-          <p>
-            {SUBJECT.classLabel} {SUBJECT.name} — {SUBJECT.board} pattern MCQs. Take a chapter test or attempt the full
-            syllabus. Answer all questions, then submit to see your score and explanations.
-          </p>
+          <p>Choose your stream to begin. Pick a chapter test or attempt the full syllabus — answer all questions, then submit to see your score and explanations.</p>
           <div className="crumbs">
             <a href="index.html">Home</a> / Quiz
           </div>
@@ -65,8 +78,59 @@ function Hub() {
 
       <section>
         <div className="container">
+          <div className="sec-head text-center">
+            <span className="eyebrow">Step 1 of 3</span>
+            <h2>Select your stream</h2>
+          </div>
+          <div className="grid grid-2 quiz-stream-grid">
+            {SUBJECTS.map((s) => {
+              const count = subjectQuestionCount(s);
+              const ready = count > 0;
+              return (
+                <a key={s.id} href={`?subject=${s.id}`} className="card quiz-stream-card">
+                  <div className="quiz-stream-icon">{s.icon}</div>
+                  <h3>{s.name}</h3>
+                  <p className="quiz-stream-meta">{s.classLabel} • {s.board}</p>
+                  <p>{s.blurb}</p>
+                  <span className={`quiz-ch-badge ${ready ? 'ready' : 'soon'}`}>
+                    {ready ? `${count} questions` : 'Coming soon'}
+                  </span>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
+/* ---------- Step 2: chapter selection ---------- */
+function ChapterSelect({ subject }: { subject: Subject }) {
+  const units = Array.from(new Set(subject.chapters.map((c) => c.unit)));
+  const publishedCount = publishedChapters(subject).length;
+
+  return (
+    <>
+      <section className="page-hero">
+        <div className="container">
+          <h1>{subject.name} — {subject.classLabel}</h1>
+          <p>{subject.board} pattern MCQs. Take a chapter test or attempt the full syllabus.</p>
+          <div className="crumbs">
+            <a href="index.html">Home</a> / <a href={STREAMS_HREF}>Quiz</a> / {subject.name}
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div className="container">
+          <div className="quiz-step-bar">
+            <a href={STREAMS_HREF} className="quiz-back-link">← Change stream</a>
+            <span className="eyebrow">Step 2 of 3 — Select a chapter</span>
+          </div>
+
           {/* Full syllabus banner */}
-          <a href="?mode=full" className={`card quiz-full-card ${publishedCount === 0 ? 'is-disabled' : ''}`}>
+          <a href={`?subject=${subject.id}&mode=full`} className={`card quiz-full-card ${publishedCount === 0 ? 'is-disabled' : ''}`}>
             <div className="quiz-full-icon">📝</div>
             <div>
               <h3>Full Syllabus Test</h3>
@@ -79,18 +143,18 @@ function Hub() {
             <span className="quiz-full-go">Start →</span>
           </a>
 
-          {/* Chapter grid, grouped by unit */}
+          {/* Chapter grid grouped by unit */}
           {units.map((unit) => (
             <div key={unit} className="quiz-unit">
               <h2 className="quiz-unit-title">{unit}</h2>
               <div className="grid grid-3">
-                {CHAPTERS.filter((c) => c.unit === unit).map((c, i) => {
+                {subject.chapters.filter((c) => c.unit === unit).map((c) => {
                   const ready = c.questions.length > 0;
-                  const num = CHAPTERS.indexOf(c) + 1;
+                  const num = subject.chapters.indexOf(c) + 1;
                   return (
                     <a
                       key={c.slug}
-                      href={ready ? `?ch=${c.slug}` : undefined}
+                      href={ready ? `?subject=${subject.id}&ch=${c.slug}` : undefined}
                       className={`card quiz-ch-card ${ready ? '' : 'is-disabled'}`}
                     >
                       <div className="quiz-ch-top">
@@ -115,19 +179,17 @@ function Hub() {
   );
 }
 
-function ComingSoon({ title }: { title: string }) {
+function ComingSoon({ subject, title }: { subject: Subject; title: string }) {
   return (
     <section className="page-hero">
       <div className="container">
         <h1>{title}</h1>
         <p>Questions for this section are being prepared and will be published soon.</p>
         <div className="crumbs">
-          <a href="index.html">Home</a> / <a href={BACK_HREF}>Quiz</a> / {title}
+          <a href="index.html">Home</a> / <a href={STREAMS_HREF}>Quiz</a> / <a href={chaptersHref(subject.id)}>{subject.name}</a> / {title}
         </div>
         <p style={{ marginTop: 20 }}>
-          <a className="btn btn-primary" href={BACK_HREF}>
-            Back to all chapters
-          </a>
+          <a className="btn btn-primary" href={chaptersHref(subject.id)}>Back to {subject.name} chapters</a>
         </p>
       </div>
     </section>
@@ -141,9 +203,7 @@ function NotFound() {
         <h1>Quiz not found</h1>
         <p>That chapter doesn’t exist.</p>
         <p style={{ marginTop: 20 }}>
-          <a className="btn btn-primary" href={BACK_HREF}>
-            Back to all chapters
-          </a>
+          <a className="btn btn-primary" href={STREAMS_HREF}>Back to all streams</a>
         </p>
       </div>
     </section>
